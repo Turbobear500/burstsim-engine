@@ -170,9 +170,19 @@ if (!existsSync(BASELINE)) {
 const base = JSON.parse(readFileSync(BASELINE, 'utf8'));
 console.log('\nДрейф относительно базовой линии от ' + base.recorded + ':\n');
 
+// ⚠️ РЕГРЕССИЯ ЖИВУЧЕСТИ ВАЛИТ ГЕЙТ (закрыто 2026-08-08). Прежний вердикт
+// считал только дрейф сравнимых профилей: сборка, в которой упали ВСЕ
+// двенадцать, печатала «дрейф 0,00% — можно промоутить». Профиль, живой в
+// базовой линии и мёртвый сейчас, — это hard fail (docs/02 §4), а не пропуск.
 let worst = 0;
+const умерли = [];
 for (const now of results) {
   const before = base.results.find((b) => b.name === now.name);
+  if (now.error && before && !before.error) {
+    console.log(`  ${now.name.padEnd(32)} был жив (${before.dps} DPS) → ${now.error}`);
+    умерли.push(now.name);
+    continue;
+  }
   if (!before || before.error || now.error) {
     console.log(`  ${now.name}: сравнение невозможно`);
     continue;
@@ -186,6 +196,10 @@ for (const now of results) {
 }
 
 console.log(`\nМаксимальный дрейф: ${worst.toFixed(2)}%`);
+if (умерли.length) {
+  console.log(`❌ Регрессия живучести: ${умерли.length} проф. считали в базовой линии и упали сейчас — hard fail, промоушен запрещён.`);
+  process.exit(1);
+}
 console.log(
   worst < 2
     ? 'Порог 2% не превышен — сборку можно промоутить.'

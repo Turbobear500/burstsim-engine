@@ -2,13 +2,13 @@
   "seed": 4242,
   "iterations": 2000,
   "target_error": 0.5,
-  "recorded": "2026-08-06",
+  "recorded": "2026-08-07",
   "results": [
     {
       "name": "MID1_Warrior_Arms",
       "spec": "Arms Warrior",
-      "dps": 107657,
-      "error_pct": 232.6,
+      "dps": 107678,
+      "error_pct": 237.32,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -21,8 +21,8 @@
     {
       "name": "MID1_Warrior_Protection",
       "spec": "Protection Warrior",
-      "dps": 84465,
-      "error_pct": 191.27,
+      "dps": 84435,
+      "error_pct": 190.79,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -35,8 +35,8 @@
     {
       "name": "MID1_Death_Knight_Unholy",
       "spec": "Unholy Death Knight",
-      "dps": 134342,
-      "error_pct": 317.54,
+      "dps": 134394,
+      "error_pct": 332.91,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -48,13 +48,23 @@
     },
     {
       "name": "MID1_Death_Knight_Blood",
-      "error": "движок аварийно завершился (код 1)"
+      "spec": "Blood Death Knight",
+      "dps": 70508,
+      "error_pct": 170.13,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
     },
     {
       "name": "MID1_Rogue_Assassination",
       "spec": "Assassination Rogue",
-      "dps": 107566,
-      "error_pct": 224.34,
+      "dps": 107452,
+      "error_pct": 222.07,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -67,8 +77,8 @@
     {
       "name": "MID1_Monk_Windwalker",
       "spec": "Windwalker Monk",
-      "dps": 118314,
-      "error_pct": 286.56,
+      "dps": 118231,
+      "error_pct": 286.04,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -81,8 +91,8 @@
     {
       "name": "MID1_Hunter_Marksmanship",
       "spec": "Marksmanship Hunter",
-      "dps": 127954,
-      "error_pct": 292.98,
+      "dps": 128056,
+      "error_pct": 295.51,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -94,13 +104,23 @@
     },
     {
       "name": "MID1_Mage_Frost",
-      "error": "движок аварийно завершился (код 1)"
+      "spec": "Frost Mage",
+      "dps": 121343,
+      "error_pct": 232.74,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
     },
     {
       "name": "MID1_Warlock_Affliction",
       "spec": "Affliction Warlock",
-      "dps": 113862,
-      "error_pct": 252.88,
+      "dps": 113865,
+      "error_pct": 254.49,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -112,13 +132,23 @@
     },
     {
       "name": "MID1_Priest_Shadow",
-      "error": "движок аварийно завершился (код 1)"
+      "spec": "Shadow Priest",
+      "dps": 117961,
+      "error_pct": 269.55,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
     },
     {
       "name": "MID1_Druid_Balance",
       "spec": "Balance Druid",
-      "dps": 115692,
-      "error_pct": 276.14,
+      "dps": 115727,
+      "error_pct": 277.08,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -130,7 +160,17 @@
     },
     {
       "name": "MID1_Evoker_Devastation",
-      "error": "движок аварийно завершился (код 1)"
+      "spec": "Devastation Evoker",
+      "dps": 114315,
+      "error_pct": 262.11,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
     }
   ]
 }

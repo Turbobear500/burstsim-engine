@@ -20,7 +20,12 @@ set -euo pipefail
 # Рабочая копия апстрима — рядом, а не внутри этого репозитория.
 ROOT="${SIMC_DIR:-/e/simc}"
 THREADED=1
+DEBUG=0
 [ "${1:-}" = "--single" ] && THREADED=0
+# Диагностическая сборка (F0-27): та же конфигурация, что рабочая, плюс
+# -sASSERTIONS=2 — вместо голого Aborted() рантайм называет причину.
+# Отдельная папка: рабочая сборка остаётся нетронутой, канарейки идут по ней.
+[ "${1:-}" = "--debug" ] && DEBUG=1
 
 if [ ! -d "$ROOT/engine" ]; then
   echo "ошибка: в $ROOT нет исходников simc. Сначала: ./scripts/sync-upstream.sh" >&2
@@ -44,9 +49,27 @@ else
   THREAD_OPT="ON"
 fi
 
+if [ "$DEBUG" = "1" ]; then
+  BUILD_DIR="${BUILD_DIR}-debug"
+  EXTRA_FLAGS="$EXTRA_FLAGS -sASSERTIONS=2"
+fi
+
 # MODULARIZE+EXPORT_ES6 даёт импортируемый модуль — так WASM остаётся отдельным
 # артефактом за message-протоколом, что важно для GPL-границы (docs/07 §3).
-COMMON_FLAGS="-O3 -sENVIRONMENT=web,worker -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS=callMain,FS -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -sSTACK_SIZE=5MB"
+#
+# ⚠️ -fwasm-exceptions ОБЯЗАТЕЛЕН (найдено 2026-08-08, F0-27). Дефолт Emscripten
+# собирает без поддержки исключений, и любой throw становится abort(). А движок
+# бросает исключения ШТАТНО: разбор хотфиксов игровых данных кидает
+# invalid_argument на кривом поле («stoul: no conversion»), native ловит его и
+# продолжает — WASM без этого флага умирал. Именно так падали 4 профиля из 12
+# (Blood DK, Frost Mage, Shadow Priest, Devastation Evoker): в их данных есть
+# такие хотфиксы, у остальных восьми — нет. Это не наш патч движка: флаг —
+# часть обвязки сборки, патч-стек остаётся пустым.
+# ⚠️ node в ENVIRONMENT — для канареек и smoke-тестов (2026-08-08). Свежий glue
+# без него не умеет под Node ни читать wasm с диска, ни поднимать воркеры, — и
+# прогонщик умирал на «both async and sync fetching of the wasm failed» ещё до
+# движка. Браузеру ветка не мешает: в рантайме она мертва.
+COMMON_FLAGS="-O3 -fwasm-exceptions -sENVIRONMENT=web,worker,node -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORTED_RUNTIME_METHODS=callMain,FS -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -sSTACK_SIZE=5MB"
 
 echo "==> Конфигурация ($([ "$THREADED" = "1" ] && echo многопоточная || echo однопоточная)) → $BUILD_DIR"
 emcmake cmake -S "$ROOT" -B "$BUILD_DIR" \
