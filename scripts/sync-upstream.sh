@@ -21,9 +21,16 @@ REPO="$(read_json repo)"
 BRANCH="$(read_json branch)"
 SHA="$(read_json sha)"
 
+# ⚠️ ЗАКРЕПЛЁННЫЙ КОММИТ ТЯНЕМ ПО SHA, а не «ветку на N коммитов назад».
+# Первая версия клонировала с --depth 50 и делала checkout: на ветке midnight
+# 10–20 коммитов в сутки, полсотни покрывают пару дней, и через неделю после
+# закрепления коммита в клоне уже нет. Ошибка появляется СО ВРЕМЕНЕМ — в день
+# написания скрипт работает. Fetch по SHA требует полного хэша (он в upstream.json).
 if [ ! -d "$SIMC_DIR/.git" ]; then
-  echo "==> Рабочей копии нет — клонирую $BRANCH в $SIMC_DIR (поверхностно)"
-  git clone --depth 50 --branch "$BRANCH" "$REPO" "$SIMC_DIR"
+  echo "==> Рабочей копии нет — создаю $SIMC_DIR"
+  mkdir -p "$SIMC_DIR"
+  git -C "$SIMC_DIR" init -q
+  git -C "$SIMC_DIR" remote add origin "$REPO"
 fi
 
 if [ "${1:-}" = "--latest" ]; then
@@ -34,8 +41,8 @@ if [ "${1:-}" = "--latest" ]; then
 fi
 
 echo "==> Привожу $SIMC_DIR к закреплённому $SHA"
-git -C "$SIMC_DIR" fetch --depth 200 origin "$BRANCH"
-git -C "$SIMC_DIR" checkout --detach "$SHA"
+git -C "$SIMC_DIR" fetch --depth 1 origin "$SHA"
+git -C "$SIMC_DIR" checkout -q --detach FETCH_HEAD
 
 # Патчей сейчас ноль, и это состояние защищается решением, а не дисциплиной.
 PATCHES="$HERE/patches"

@@ -1,0 +1,59 @@
+# Нативная сборка движка (F0-5, docs/02 §3).
+#
+# ЗАЧЕМ ИМЕННО КОНТЕЙНЕР. Дело не в удобстве: сборка должна быть
+# ВОСПРОИЗВОДИМОЙ. Каждый отчёт пинит версию движка, и через полгода мы обязаны
+# уметь пересобрать ровно тот бинарь, которым считали. Локальная машина этого не
+# даёт — у неё меняются компилятор, библиотеки и настроение.
+#
+# ⚠️ ИСХОДНИКИ КЛОНИРУЮТСЯ ЗДЕСЬ, а не лежат в репозитории (ADR-0011). SHA
+# передаётся аргументом и берётся из upstream.json — одно число задаёт версию.
+#
+# ⚠️ SC_NO_THREADING НЕ ВКЛЮЧАТЬ. На ветке midnight этот флаг разваливает
+# подсистему profileset — ядро Top Gear и Droptimizer. Доказательство и разбор:
+# decisions/DEAD-ENDS.md в репозитории burstsim. Собираем штатный многопоточный
+# код; число потоков задаётся в рантайме опцией threads=N.
+#
+# Сборка:
+#   docker build -f docker/Dockerfile.native --build-arg SHA=<sha> -t burstsim-engine:native .
+
+FROM alpine:3.21 AS build
+
+ARG SHA
+ARG BRANCH=midnight
+ARG REPO=https://github.com/simulationcraft/simc.git
+
+RUN apk add --no-cache build-base cmake ninja git linux-headers
+
+WORKDIR /src
+# ⚠️ ТЯНЕМ РОВНО ЗАКРЕПЛЁННЫЙ КОММИТ, а не «ветку на N коммитов назад».
+# Первая версия делала `clone --depth 50` и потом checkout — и упала: на ветке
+# midnight 10–20 коммитов в сутки, так что полсотни покрывают пару дней, а
+# закреплённый коммит был двухнедельной давности. Это ошибка, которая появляется
+# СО ВРЕМЕНЕМ: в день заведения сборка зелёная, через неделю — красная.
+# Fetch по SHA требует полного сорокасимвольного хэша, поэтому в upstream.json
+# он хранится целиком.
+RUN git init -q . \
+    && git remote add origin "$REPO" \
+    && git fetch --depth 1 origin "$SHA" \
+    && git checkout -q FETCH_HEAD \
+    && git log --oneline -1
+
+# Статическая сборка под musl: бинарь не тянет за собой рантайм и одинаково
+# запускается на любом воркере, включая домашний WSL2.
+RUN cmake -S . -B build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_GUI=OFF \
+      -DBUILD_TESTING=OFF \
+      -DSC_NO_NETWORKING=ON \
+      -DCMAKE_EXE_LINKER_FLAGS="-static" \
+    && cmake --build build -j "$(nproc)" \
+    && strip build/simc \
+    && ./build/simc --version | head -3
+
+FROM alpine:3.21
+# В рабочем образе только бинарь и эталонные профили: ни компилятора, ни
+# исходников. Меньше поверхность и меньше вес.
+COPY --from=build /src/build/simc /usr/local/bin/simc
+COPY --from=build /src/profiles /profiles
+WORKDIR /work
+ENTRYPOINT ["simc"]

@@ -35,7 +35,7 @@ const BASELINE = resolve(HERE, '..', 'canary-baseline.json');
  * Двенадцать профилей по ролям и архетипам (docs/02 §4).
  * Набор фиксирован: меняя состав, теряешь сравнимость с прежней линией.
  */
-const PROFILES = [
+export const PROFILES = [
   'MID1_Warrior_Arms',           // ближний физический, 2H
   'MID1_Warrior_Protection',     // танк физический
   'MID1_Death_Knight_Unholy',    // ближний, питомец
@@ -50,9 +50,9 @@ const PROFILES = [
   'MID1_Evoker_Devastation',     // дальний, эмпауэр
 ];
 
-const SEED = 4242;
-const ITERATIONS = 2000;
-const TARGET_ERROR = 0.5; // компромисс: 12 профилей должны укладываться в минуты
+export const SEED = 4242;
+export const ITERATIONS = 2000;
+export const TARGET_ERROR = 0.5; // компромисс: 12 профилей должны укладываться в минуты
 
 async function runProfile(name) {
   const profilePath = join(ROOT, 'profiles', 'MID1', `${name}.simc`);
@@ -103,6 +103,20 @@ async function runProfile(name) {
   }
 }
 
+// ── Прогон стартует ТОЛЬКО при прямом запуске файла ─────────────────────────
+// ⚠️ Найдено 2026-08-08 на живом отказе: compare-native.mjs импортировал отсюда
+// PROFILES — и импорт ИСПОЛНИЛ весь скрипт. Прогнались WASM-канарейки, скрипт
+// вышел через process.exit, до кода сверки дело не дошло, а код выхода был 0 и
+// вывод выглядел правдоподобно: «сверка с нативом» оказалась бы сравнением WASM
+// с самим собой. Скрипт, который можно импортировать, не имеет права исполнять
+// работу на верхнем уровне модуля.
+if (fileURLToPath(import.meta.url) !== resolve(process.argv[1] ?? '')) {
+  // Импорт ради PROFILES/SEED/… — отдаём экспорты и не считаем ничего.
+} else {
+  await canaryMain();
+}
+
+async function canaryMain() {
 // ── Режим одного профиля: используется родителем как дочерний процесс ───────
 // Каждый профиль считается в СВОЁМ процессе. Причина не в чистоте, а в том,
 // что движок умеет аварийно завершаться на отдельном профиле (см. DEAD-ENDS):
@@ -178,3 +192,4 @@ console.log(
     : 'Порог превышен: нужно подтверждение из changelog апстрима, иначе карантин (docs/02 §4).',
 );
 process.exit(worst >= 5 ? 1 : 0);
+}
