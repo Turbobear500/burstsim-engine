@@ -1,0 +1,136 @@
+{
+  "seed": 4242,
+  "iterations": 2000,
+  "target_error": 0.5,
+  "recorded": "2026-08-06",
+  "results": [
+    {
+      "name": "MID1_Warrior_Arms",
+      "spec": "Arms Warrior",
+      "dps": 107657,
+      "error_pct": 232.6,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
+    },
+    {
+      "name": "MID1_Warrior_Protection",
+      "spec": "Protection Warrior",
+      "dps": 84465,
+      "error_pct": 191.27,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
+    },
+    {
+      "name": "MID1_Death_Knight_Unholy",
+      "spec": "Unholy Death Knight",
+      "dps": 134342,
+      "error_pct": 317.54,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
+    },
+    {
+      "name": "MID1_Death_Knight_Blood",
+      "error": "движок аварийно завершился (код 1)"
+    },
+    {
+      "name": "MID1_Rogue_Assassination",
+      "spec": "Assassination Rogue",
+      "dps": 107566,
+      "error_pct": 224.34,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
+    },
+    {
+      "name": "MID1_Monk_Windwalker",
+      "spec": "Windwalker Monk",
+      "dps": 118314,
+      "error_pct": 286.56,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
+    },
+    {
+      "name": "MID1_Hunter_Marksmanship",
+      "spec": "Marksmanship Hunter",
+      "dps": 127954,
+      "error_pct": 292.98,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
+    },
+    {
+      "name": "MID1_Mage_Frost",
+      "error": "движок аварийно завершился (код 1)"
+    },
+    {
+      "name": "MID1_Warlock_Affliction",
+      "spec": "Affliction Warlock",
+      "dps": 113862,
+      "error_pct": 252.88,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
+    },
+    {
+      "name": "MID1_Priest_Shadow",
+      "error": "движок аварийно завершился (код 1)"
+    },
+    {
+      "name": "MID1_Druid_Balance",
+      "spec": "Balance Druid",
+      "dps": 115692,
+      "error_pct": 276.14,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 68887,
+        "wow_version": "12.0.7.68887",
+        "hotfix_date": "2026-07-23",
+        "hotfix_build": 68887,
+        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+      }
+    },
+    {
+      "name": "MID1_Evoker_Devastation",
+      "error": "движок аварийно завершился (код 1)"
+    }
+  ]
+}
