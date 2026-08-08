@@ -16,7 +16,11 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SIMC_DIR="${SIMC_DIR:-/e/simc}"
 
-read_json() { node -p "JSON.parse(require('fs').readFileSync('$HERE/upstream.json','utf8')).$1"; }
+# ⚠️ Файл подаётся через stdin, а не путём в аргументе (починено 2026-08-08
+# живым прогоном): node на Windows читает msys-путь `/e/…` как `E:\e\…`, и
+# скрипт умирал на первом же вызове — то есть НЕ РАБОТАЛ НИ РАЗУ с момента
+# написания. Редирект делает bash, ему msys-пути родные.
+read_json() { node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).$1" < "$HERE/upstream.json"; }
 REPO="$(read_json repo)"
 BRANCH="$(read_json branch)"
 SHA="$(read_json sha)"
@@ -34,14 +38,30 @@ if [ ! -d "$SIMC_DIR/.git" ]; then
 fi
 
 if [ "${1:-}" = "--latest" ]; then
-  git -C "$SIMC_DIR" fetch --depth 200 origin "$BRANCH"
-  echo "==> Приехало в апстрим после закреплённого $SHA:"
-  git -C "$SIMC_DIR" log --oneline "$SHA..FETCH_HEAD" | head -30
+  # Fetch по URL, а не по имени remote: в рабочей копии он может зваться как угодно
+  # (у нас — upstream с июльского клона; поймано живым прогоном 2026-08-08).
+  git -C "$SIMC_DIR" fetch --depth 200 "$REPO" "$BRANCH"
+  TIP="$(git -C "$SIMC_DIR" rev-parse FETCH_HEAD)"
+  echo "==> Верхушка $BRANCH: $TIP"
+  # Связность в пределах глубины не гарантирована: апстрим делает 10–20
+  # коммитов в день, и закреплённый коммит двухнедельной давности может
+  # оказаться за шельфом. Тогда счёт «что приехало» невозможен — говорим об
+  # этом прямо, а не показываем усечённый список как полный.
+  if git -C "$SIMC_DIR" merge-base --is-ancestor "$SHA" FETCH_HEAD 2>/dev/null; then
+    N="$(git -C "$SIMC_DIR" rev-list --count "$SHA..FETCH_HEAD")"
+    echo "==> Приехало после закреплённого $SHA: $N коммитов"
+    git -C "$SIMC_DIR" log --oneline "$SHA..FETCH_HEAD" | head -30
+  else
+    echo "==> ⚠️ Закреплённый коммит вне глубины выборки (новых больше ~200)."
+    echo "    Полного счёта нет; свежие коммиты:"
+    git -C "$SIMC_DIR" log --oneline FETCH_HEAD | head -20
+  fi
+  echo "==> Новый SHA для upstream.json (если решаем обновляться): $TIP"
   exit 0
 fi
 
 echo "==> Привожу $SIMC_DIR к закреплённому $SHA"
-git -C "$SIMC_DIR" fetch --depth 1 origin "$SHA"
+git -C "$SIMC_DIR" fetch --depth 1 "$REPO" "$SHA"
 git -C "$SIMC_DIR" checkout -q --detach FETCH_HEAD
 
 # Патчей сейчас ноль, и это состояние защищается решением, а не дисциплиной.

@@ -77,30 +77,31 @@ async function runProfile(name) {
     if (err?.name !== 'ExitStatus') return { name, error: String(err?.message ?? err) };
   }
 
+  // ⚠️ Ждём не ПОЯВЛЕНИЯ файла, а момента, когда он ДОЧИТЫВАЕТСЯ как JSON
+  // (починено 2026-08-08: гонка выстрелила на репетиции учений). Движок под
+  // PROXY_TO_PTHREAD пишет отчёт из другого потока, и «файл существует» не
+  // значит «файл дописан»: чтение в этот зазор давало «Unexpected end of JSON
+  // input» — флаки, который выглядел как аварийное завершение движка.
   const deadline = Date.now() + 600_000;
+  let lastError = 'отчёт не появился за 600 с';
   while (Date.now() < deadline) {
     try {
-      Module.FS.stat('/out.json');
-      break;
-    } catch {
+      const report = JSON.parse(Module.FS.readFile('/out.json', { encoding: 'utf8' }));
+      const player = report?.sim?.players?.[0];
+      return {
+        name,
+        spec: player?.specialization ?? '?',
+        dps: Math.round(player?.collected_data?.dps?.mean ?? 0),
+        error_pct: Number((player?.collected_data?.dps?.mean_std_dev ?? 0).toFixed(2)),
+        build: report?.version ?? '?',
+        wow_build: report?.sim?.options?.dbc?.Live ?? report?.build_level ?? '?',
+      };
+    } catch (err) {
+      lastError = String(err);
       await new Promise((r) => setTimeout(r, 200));
     }
   }
-
-  try {
-    const report = JSON.parse(Module.FS.readFile('/out.json', { encoding: 'utf8' }));
-    const player = report?.sim?.players?.[0];
-    return {
-      name,
-      spec: player?.specialization ?? '?',
-      dps: Math.round(player?.collected_data?.dps?.mean ?? 0),
-      error_pct: Number((player?.collected_data?.dps?.mean_std_dev ?? 0).toFixed(2)),
-      build: report?.version ?? '?',
-      wow_build: report?.sim?.options?.dbc?.Live ?? report?.build_level ?? '?',
-    };
-  } catch (err) {
-    return { name, error: `json2 не прочитан: ${String(err)}` };
-  }
+  return { name, error: `json2 не дочитался: ${lastError}` };
 }
 
 // ── Прогон стартует ТОЛЬКО при прямом запуске файла ─────────────────────────
@@ -169,6 +170,17 @@ if (!existsSync(BASELINE)) {
 
 const base = JSON.parse(readFileSync(BASELINE, 'utf8'));
 console.log('\nДрейф относительно базовой линии от ' + base.recorded + ':\n');
+
+// Смена игрового билда — отдельный сигнал (docs/02 §4): патчевые качели DPS
+// легитимны, но требуют РУЧНОГО аппрува, а не молчаливого сравнения яблок
+// с грушами. После аппрува базовая линия переснимается (--record).
+const wowБыло = base.results.find((r) => r.wow_build)?.wow_build?.wow_version ?? null;
+const wowСтало = results.find((r) => r.wow_build)?.wow_build?.wow_version ?? null;
+if (wowБыло !== wowСтало) {
+  console.log(`⚠️ БИЛД ИГРЫ СМЕНИЛСЯ: ${wowБыло} → ${wowСтало}`);
+  console.log('   Дрейф ниже ОЖИДАЕМ. Порядок: ручной аппрув по changelog апстрима,');
+  console.log('   затем переснять базовую линию: node scripts/canary.mjs --record\n');
+}
 
 // ⚠️ РЕГРЕССИЯ ЖИВУЧЕСТИ ВАЛИТ ГЕЙТ (закрыто 2026-08-08). Прежний вердикт
 // считал только дрейф сравнимых профилей: сборка, в которой упали ВСЕ
