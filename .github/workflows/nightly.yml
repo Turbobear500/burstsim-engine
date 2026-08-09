@@ -1,0 +1,220 @@
+# Ночной конвейер движка (F1-4, docs/02 §3 репозитория burstsim).
+#
+# ЧТО ДЕЛАЕТ: смотрит апстрим → собирает native и WASM из ОДНОГО коммита →
+# гоняет канарейки и сверку лейнов → складывает артефакты. Зелёный прогон
+# открывает PR со сменой закреплённого SHA.
+#
+# ⚠️ ПОЧЕМУ PR, А НЕ ПРЯМАЯ ЗАПИСЬ SHA. Закреплённый коммит — это то, из чего
+# собран движок, раздаваемый живым пользователям. Автомат, меняющий его сам,
+# однажды подменит основание отчётов без единого человеческого решения.
+# Промоушен каналов (candidate → stable) — отдельная задача F1-8; до неё
+# зелёный прогон лишь ПРЕДЛАГАЕТ обновление, а принимает человек.
+#
+# ⚠️ МИНУТЫ. Расчёт из docs/02 §3 («приватный репозиторий съест квоту»)
+# закрылся сам: репозиторий публичен с 2026-08-09, а публичным Actions
+# минуты не тарифицируются. Self-hosted runner больше не нужен.
+#
+# Ручной запуск (патч-день): вкладка Actions → Nightly engine → Run workflow.
+
+name: Nightly engine
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # 04:00 UTC, как в docs/02 §3
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Собрать конкретный коммит апстрима (пусто — верхушка ветки)'
+        required: false
+        type: string
+      force:
+        description: 'Собрать, даже если апстрим не двигался'
+        required: false
+        type: boolean
+        default: false
+
+# Устаревший прогон на той же ссылке отменяем: держать две сборки simc
+# одновременно незачем.
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write # ветка для PR
+  pull-requests: write
+
+jobs:
+  # ── 1. Двигался ли апстрим ───────────────────────────────────────────────
+  # Дешёвый шаг: если коммит тот же, тяжёлые сборки не запускаем вовсе.
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      pinned: ${{ steps.decide.outputs.pinned }}
+      target: ${{ steps.decide.outputs.target }}
+      changed: ${{ steps.decide.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: decide
+        name: Сравнить закреплённый SHA с апстримом
+        run: |
+          set -euo pipefail
+          PINNED=$(node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).sha" < upstream.json)
+          REPO=$(node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).repo" < upstream.json)
+          BRANCH=$(node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).branch" < upstream.json)
+
+          if [ -n "${{ inputs.sha }}" ]; then
+            TARGET="${{ inputs.sha }}"
+            echo "Цель задана вручную: $TARGET"
+          else
+            TARGET=$(git ls-remote "$REPO" "refs/heads/$BRANCH" | cut -f1)
+            echo "Верхушка $BRANCH: $TARGET"
+          fi
+
+          [ -n "$TARGET" ] || { echo "не удалось узнать коммит апстрима" >&2; exit 1; }
+
+          if [ "$TARGET" = "$PINNED" ] && [ "${{ inputs.force }}" != "true" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Апстрим не двигался ($PINNED) — сборка не нужна."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "pinned=$PINNED" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+
+  # ── 2. Сборка обоих лейнов из одного коммита ─────────────────────────────
+  # native и WASM в ОДНОЙ работе намеренно: их сверка (compare-native)
+  # требует оба артефакта рядом, а гонять исходники дважды дороже.
+  build:
+    needs: check
+    if: needs.check.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      SIMC_DIR: ${{ github.workspace }}/simc
+      TARGET_SHA: ${{ needs.check.outputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Забрать ровно нужный коммит апстрима
+        # Полная история весит ~5 ГБ (ADR-0011). Тянем один коммит:
+        # `--depth 1` по SHA работает независимо от возраста коммита —
+        # урок из журнала тупиков (клон ограниченной глубины по ветке
+        # перестаёт содержать закреплённый коммит, как только апстрим уходит).
+        run: |
+          set -euo pipefail
+          REPO=$(node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).repo" < upstream.json)
+          mkdir -p "$SIMC_DIR" && cd "$SIMC_DIR"
+          git init -q .
+          git remote add origin "$REPO"
+          git fetch --depth 1 origin "$TARGET_SHA"
+          git checkout -q FETCH_HEAD
+          echo "simc на $(git rev-parse HEAD)"
+
+      - name: Кэш ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ env.TARGET_SHA }}
+          restore-keys: ccache-${{ runner.os }}-
+
+      - name: Кэш emsdk
+        id: emsdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/emsdk
+          key: emsdk-6.0.3-${{ runner.os }}
+
+      - name: Поставить Emscripten 6.0.3
+        # Версия закреплена: на ней снята базовая линия канареек, и менять её
+        # молча нельзя — сменится компилятор, сместятся числа.
+        if: steps.emsdk-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git ~/emsdk
+          cd ~/emsdk
+          ./emsdk install 6.0.3
+          ./emsdk activate 6.0.3
+
+      - name: Сборка WASM
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build ccache
+          source ~/emsdk/emsdk_env.sh
+          ./scripts/build-wasm.sh
+
+      - name: Smoke-тест WASM (сборка вообще считает?)
+        run: node scripts/smoke-test.mjs
+
+      - name: Канарейки WASM против базовой линии
+        # Пороги и правило «регрессия живучести = hard fail» живут в самом
+        # скрипте (docs/02 §4). Красный здесь останавливает конвейер.
+        run: node scripts/canary.mjs
+
+      - name: Сборка native (Docker, тот же коммит)
+        run: |
+          set -euo pipefail
+          docker build -f docker/Dockerfile.native \
+            --build-arg SHA="$TARGET_SHA" \
+            -t burstsim-engine:native .
+
+      - name: Сверка WASM ↔ native
+        # Главный внешний судья браузерного лейна: числа обязаны сойтись
+        # в пределах порога, иначе раздавать WASM нельзя.
+        run: node scripts/compare-native.mjs
+
+      - name: Собрать артефакты WASM
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp "$SIMC_DIR"/build-wasm-mt/simc.js  artifacts/
+          cp "$SIMC_DIR"/build-wasm-mt/simc.wasm artifacts/
+          printf '%s\n' "$TARGET_SHA" > artifacts/UPSTREAM_SHA
+          ls -la artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: engine-wasm-${{ needs.check.outputs.target }}
+          path: artifacts/
+          retention-days: 14
+
+      # ── 3. Предложить обновление закрепления ────────────────────────────
+      # Не «переставить», а именно предложить: см. шапку файла.
+      - name: PR со сменой закреплённого SHA
+        if: github.event_name == 'schedule' || inputs.sha == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          BRANCH="engine/pin-${TARGET_SHA:0:7}"
+
+          # Ветка уже есть на сервере — значит прошлый прогон её создал.
+          # Не трогаем: переписывать опубликованную ветку запрещено
+          # (PIPELINE §4 репозитория burstsim), а force-push тем более.
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "Ветка $BRANCH уже опубликована — предложение висит, нового не создаём."
+            exit 0
+          fi
+
+          node -e "
+            const fs=require('fs');
+            const j=JSON.parse(fs.readFileSync('upstream.json','utf8'));
+            j.sha=process.env.TARGET_SHA;
+            j['закреплён']=new Date().toISOString().slice(0,10);
+            fs.writeFileSync('upstream.json', JSON.stringify(j,null,2)+'\n');
+          "
+
+          # Тело сообщения собираем printf: отступы YAML иначе уезжают в git log.
+          MSG=$(printf '%s\n\n%s\n%s\n' \
+            "chore(engine): закрепить апстрим ${TARGET_SHA:0:7} — ночной прогон зелёный" \
+            "Канарейки и сверка WASM ↔ native пройдены на этом коммите." \
+            "Промоушен канала — отдельно (F1-8).")
+
+          git config user.name  'burstsim-nightly'
+          git config user.email 'nightly@users.noreply.github.com'
+          git checkout -b "$BRANCH"
+          git add upstream.json
+          git commit -m "$MSG"
+          git push -u origin "$BRANCH"
+          gh pr create --fill --base main --head "$BRANCH"
