@@ -59,7 +59,19 @@ async function runProfile(name) {
   if (!existsSync(profilePath)) return { name, error: 'профиль не найден' };
 
   const factory = (await import(pathToFileURL(join(BUILD, 'simc.js')).href)).default;
-  const Module = await factory({ noInitialRun: true, print: () => {}, printErr: () => {} });
+
+  // ⚠️ ВЫВОД ДВИЖКА НЕ ВЫБРАСЫВАЕМ, А КОПИМ ХВОСТОМ (2026-08-09).
+  // Раньше print/printErr были заглушены наглухо, и при аварийном завершении
+  // гейт сообщал «json2 не дочитался: [object Object]» — то есть «упало,
+  // разбирайся сам». На патч-дне это худшее из возможных сообщений: причина
+  // была у нас в руках и мы её выбросили. Тихий прогон остаётся тихим —
+  // хвост печатается ТОЛЬКО когда профиль не дал отчёта.
+  const хвост = [];
+  const запомнить = (s) => {
+    хвост.push(String(s));
+    if (хвост.length > 12) хвост.shift();
+  };
+  const Module = await factory({ noInitialRun: true, print: запомнить, printErr: запомнить });
 
   Module.FS.writeFile('/in.simc', readFileSync(profilePath, 'utf8'));
   try {
@@ -74,7 +86,7 @@ async function runProfile(name) {
       'report_details=0',
     ]);
   } catch (err) {
-    if (err?.name !== 'ExitStatus') return { name, error: String(err?.message ?? err) };
+    if (err?.name !== 'ExitStatus') return { name, error: `${опишиОшибку(err)}${приписатьХвост(хвост)}` };
   }
 
   // ⚠️ Ждём не ПОЯВЛЕНИЯ файла, а момента, когда он ДОЧИТЫВАЕТСЯ как JSON
@@ -82,8 +94,9 @@ async function runProfile(name) {
   // PROXY_TO_PTHREAD пишет отчёт из другого потока, и «файл существует» не
   // значит «файл дописан»: чтение в этот зазор давало «Unexpected end of JSON
   // input» — флаки, который выглядел как аварийное завершение движка.
-  const deadline = Date.now() + 600_000;
-  let lastError = 'отчёт не появился за 600 с';
+  const ЖДЁМ_С = Number(process.env.CANARY_REPORT_TIMEOUT_S ?? 600);
+  const deadline = Date.now() + ЖДЁМ_С * 1000;
+  let lastError = `отчёт не появился за ${ЖДЁМ_С} с`;
   while (Date.now() < deadline) {
     try {
       const report = JSON.parse(Module.FS.readFile('/out.json', { encoding: 'utf8' }));
@@ -97,11 +110,43 @@ async function runProfile(name) {
         wow_build: report?.sim?.options?.dbc?.Live ?? report?.build_level ?? '?',
       };
     } catch (err) {
-      lastError = String(err);
+      lastError = опишиОшибку(err);
       await new Promise((r) => setTimeout(r, 200));
     }
   }
-  return { name, error: `json2 не дочитался: ${lastError}` };
+  return { name, error: `отчёта нет за ${ЖДЁМ_С} с (${lastError})${приписатьХвост(хвост)}` };
+}
+
+/**
+ * Человекочитаемое описание ошибки.
+ *
+ * ⚠️ `String(err)` на объекте ошибки Emscripten даёт «[object Object]» — именно
+ * так гейт 2026-08-09 сообщил о падении Unholy DK, не сказав ничего. Отдельная
+ * ветка для ENOENT: «файла нет» и «файл не дочитан как JSON» — разные диагнозы,
+ * и путать их нельзя (первое = движок не дошёл до записи, второе = гонка).
+ */
+function опишиОшибку(err) {
+  if (err == null) return 'без описания';
+  if (typeof err === 'string') return err;
+  if (err.name === 'ErrnoError' || err.errno !== undefined) {
+    return err.errno === 44 || err.code === 'ENOENT' ? 'файла отчёта нет' : `ошибка ФС (errno ${err.errno})`;
+  }
+  if (err.message) return `${err.name ?? 'Error'}: ${err.message}`;
+  // ⚠️ Последний рубеж: у объекта без message String() даёт «[object Object]» —
+  // ровно та бесполезная строка, из-за которой эта функция и появилась.
+  const s = String(err);
+  if (s !== '[object Object]') return s;
+  try {
+    return `объект без message: ${JSON.stringify(err)}`;
+  } catch {
+    return `объект без message (несериализуемый), ключи: ${Object.keys(err).join(',') || 'нет'}`;
+  }
+}
+
+/** Последние строки самого движка — то, ради чего их и копили. */
+function приписатьХвост(хвост) {
+  if (!хвост.length) return ' · движок не сказал ничего';
+  return `\n      движок напоследок: ${хвост.slice(-6).join(' | ')}`;
 }
 
 // ── Прогон стартует ТОЛЬКО при прямом запуске файла ─────────────────────────
