@@ -1,0 +1,10 @@
+{
+  "_": "Итог сверки WASM ↔ native. Пишется compare-native.mjs, читается pnpm sync:canaries в основном репозитории. Руками не править.",
+  "compared": "2026-08-10",
+  "threshold_pct": 0.5,
+  "converged": 12,
+  "total": 12,
+  "max_delta_pct": 0.21,
+  "build": "1205-01",
+  "wow_version": "12.0.7.68887"
+}

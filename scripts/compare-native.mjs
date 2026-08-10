@@ -24,13 +24,23 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ITERATIONS, PROFILES, SEED, TARGET_ERROR } from './canary.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BASELINE = resolve(HERE, '..', 'canary-baseline.json');
+/**
+ * Итог сверки в машинном виде.
+ *
+ * ⚠️ ЗАЧЕМ ФАЙЛ, А НЕ ТОЛЬКО ПЕЧАТЬ. Максимальное расхождение с нативом — это
+ * число, которое сайт показывает людям («12/12 в пределах 0,21%»). Пока оно
+ * жило только в выводе на экран, его переносили в код руками, а руками
+ * переносимое число рано или поздно отстаёт от истины. Теперь его забирает
+ * `pnpm sync:canaries` в основном репозитории.
+ */
+const ИТОГ_ФАЙЛ = resolve(HERE, '..', 'native-compare.json');
 const ОБРАЗ = process.env.ENGINE_IMAGE ?? 'burstsim-engine:native';
 const ПОРОГ = 0.5; // процент, docs/02 §4
 
@@ -132,6 +142,28 @@ if (расхождения.length) console.log(`  ❌ расхождений: ${
 if (обаПадают.length) console.log(`  падают обе сборки: ${обаПадают.length} → баг апстрима, наша вина исключена`);
 if (толькоWasm.length) console.log(`  ❌ падает только WASM: ${толькоWasm.length} → баг НАШЕЙ сборки, лейн держим закрытым`);
 if (толькоNative.length) console.log(`  ⚠️ падает только native: ${толькоNative.length} → разбирать отдельно`);
+
+const сошлись = строки.filter((с) => с.вердикт === 'сходится');
+const максДельта = сошлись.reduce((m, с) => Math.max(m, Math.abs(с.дельта ?? 0)), 0);
+
+writeFileSync(
+  ИТОГ_ФАЙЛ,
+  JSON.stringify(
+    {
+      _: 'Итог сверки WASM ↔ native. Пишется compare-native.mjs, читается pnpm sync:canaries в основном репозитории. Руками не править.',
+      compared: new Date().toISOString().slice(0, 10),
+      threshold_pct: ПОРОГ,
+      converged: сошлись.length,
+      total: строки.length,
+      max_delta_pct: Number(максДельта.toFixed(2)),
+      build: линия.results?.[0]?.build ?? null,
+      wow_version: линия.results?.[0]?.wow_build?.wow_version ?? null,
+    },
+    null,
+    2,
+  ) + '\n',
+);
+console.log(`  итог записан: ${ИТОГ_ФАЙЛ} (максимум ${максДельта.toFixed(2)}%)`);
 
 console.log('');
 process.exit(расхождения.length || толькоWasm.length || толькоNative.length ? 1 : 0);
