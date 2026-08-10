@@ -8,7 +8,8 @@
       "name": "MID1_Warrior_Arms",
       "spec": "Arms Warrior",
       "dps": 107678,
-      "error_pct": 237.32,
+      "mean_std_dev": 237.32,
+      "err_pct": 0.22,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -22,7 +23,8 @@
       "name": "MID1_Warrior_Protection",
       "spec": "Protection Warrior",
       "dps": 84435,
-      "error_pct": 190.79,
+      "mean_std_dev": 190.79,
+      "err_pct": 0.226,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -36,7 +38,8 @@
       "name": "MID1_Death_Knight_Unholy",
       "spec": "Unholy Death Knight",
       "dps": 134394,
-      "error_pct": 332.91,
+      "mean_std_dev": 332.91,
+      "err_pct": 0.248,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -50,7 +53,8 @@
       "name": "MID1_Death_Knight_Blood",
       "spec": "Blood Death Knight",
       "dps": 70508,
-      "error_pct": 170.13,
+      "mean_std_dev": 170.13,
+      "err_pct": 0.241,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -64,7 +68,8 @@
       "name": "MID1_Rogue_Assassination",
       "spec": "Assassination Rogue",
       "dps": 107452,
-      "error_pct": 222.07,
+      "mean_std_dev": 222.07,
+      "err_pct": 0.207,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -78,7 +83,8 @@
       "name": "MID1_Monk_Windwalker",
       "spec": "Windwalker Monk",
       "dps": 118231,
-      "error_pct": 286.04,
+      "mean_std_dev": 286.04,
+      "err_pct": 0.242,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -92,7 +98,8 @@
       "name": "MID1_Hunter_Marksmanship",
       "spec": "Marksmanship Hunter",
       "dps": 128056,
-      "error_pct": 295.51,
+      "mean_std_dev": 295.51,
+      "err_pct": 0.231,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -106,7 +113,8 @@
       "name": "MID1_Mage_Frost",
       "spec": "Frost Mage",
       "dps": 121343,
-      "error_pct": 232.74,
+      "mean_std_dev": 232.74,
+      "err_pct": 0.192,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -120,7 +128,8 @@
       "name": "MID1_Warlock_Affliction",
       "spec": "Affliction Warlock",
       "dps": 113865,
-      "error_pct": 254.49,
+      "mean_std_dev": 254.49,
+      "err_pct": 0.224,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -134,7 +143,8 @@
       "name": "MID1_Priest_Shadow",
       "spec": "Shadow Priest",
       "dps": 117961,
-      "error_pct": 269.55,
+      "mean_std_dev": 269.55,
+      "err_pct": 0.229,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -148,7 +158,8 @@
       "name": "MID1_Druid_Balance",
       "spec": "Balance Druid",
       "dps": 115727,
-      "error_pct": 277.08,
+      "mean_std_dev": 277.08,
+      "err_pct": 0.239,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,
@@ -162,7 +173,8 @@
       "name": "MID1_Evoker_Devastation",
       "spec": "Devastation Evoker",
       "dps": 114315,
-      "error_pct": 262.11,
+      "mean_std_dev": 262.11,
+      "err_pct": 0.229,
       "build": "1205-01",
       "wow_build": {
         "build_level": 68887,

@@ -101,11 +101,21 @@ async function runProfile(name) {
     try {
       const report = JSON.parse(Module.FS.readFile('/out.json', { encoding: 'utf8' }));
       const player = report?.sim?.players?.[0];
+      const dps = Math.round(player?.collected_data?.dps?.mean ?? 0);
+      // ⚠️ ИМЯ ПОЛЯ ОБЯЗАНО СОВПАДАТЬ С ТЕМ, ЧТО В НЁМ ЛЕЖИТ. Раньше здесь
+      // стояло `error_pct`, а записывалось `mean_std_dev` — абсолютное
+      // отклонение в DPS. В базовой линии это выглядело как «error_pct:
+      // 237.32», то есть прибор в патч-день показывал 237% ошибки там, где
+      // её 0,22%. На сверку это не влияло (сравниваются только dps), но
+      // читать такое в два часа ночи — верный способ принять неверное
+      // решение. Теперь пишем оба: абсолютное и настоящий процент.
+      const std = Number((player?.collected_data?.dps?.mean_std_dev ?? 0).toFixed(2));
       return {
         name,
         spec: player?.specialization ?? '?',
-        dps: Math.round(player?.collected_data?.dps?.mean ?? 0),
-        error_pct: Number((player?.collected_data?.dps?.mean_std_dev ?? 0).toFixed(2)),
+        dps,
+        mean_std_dev: std,
+        err_pct: dps > 0 ? Number(((std / dps) * 100).toFixed(3)) : 0,
         build: report?.version ?? '?',
         wow_build: report?.sim?.options?.dbc?.Live ?? report?.build_level ?? '?',
       };
