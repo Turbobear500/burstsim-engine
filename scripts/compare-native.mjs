@@ -7,9 +7,16 @@
  * числа, браузерный лейн публиковать нельзя — мы показывали бы людям цифры, не
  * зная, верны ли они. Доверие к числам это единственное, что мы продаём.
  *
- * ЧТО ДЕЛАЕТ. Гоняет тот же набор профилей с теми же параметрами (набор
- * импортируется из canary.mjs — второго списка нет по построению) в нативном
- * контейнере и сравнивает с базовой линией WASM.
+ * ЧТО ДЕЛАЕТ. Гоняет тот же набор профилей с теми же параметрами (набор и сам
+ * прогонщик импортируются из canary.mjs — второго списка и второй реализации
+ * нет по построению) ДВАЖДЫ: в браузерной сборке и в нативном контейнере, — и
+ * сравнивает эти два живых прогона между собой.
+ *
+ * ⚠️ ИМЕННО ДВА ЖИВЫХ ПРОГОНА, А НЕ ПРОГОН ПРОТИВ БАЗОВОЙ ЛИНИИ. До 2026-08-11
+ * скрипт брал числа WASM из `canary-baseline.json`, и это было незаметно
+ * ошибочно: пока закреплённая сборка совпадает с той, на которой снята линия,
+ * ответ случайно верен. На первом же патче он объявил дрейф баланса «багом
+ * сборки». Подробности — у `прогнатьWasm`.
  *
  * ПОРОГ 0,5% — из docs/02 §4. Расхождение выше — это баг сборки, а не баланс:
  * seed, число итераций и target_error одинаковы, значит различаться числа могут
@@ -24,13 +31,14 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ITERATIONS, PROFILES, SEED, TARGET_ERROR } from './canary.mjs';
+import { ITERATIONS, PROFILES, runProfile, SEED, TARGET_ERROR } from './canary.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const BASELINE = resolve(HERE, '..', 'canary-baseline.json');
+// Базовая линия здесь БОЛЬШЕ НЕ ЧИТАЕТСЯ намеренно: сверка меряет две живые
+// сборки, а не сравнивает одну из них с прошлым (см. `прогнатьWasm` ниже).
 /**
  * Итог сверки в машинном виде.
  *
@@ -82,12 +90,38 @@ function прогнать(name) {
   }
 }
 
-if (!existsSync(BASELINE)) {
-  console.log(`Базовой линии нет: ${BASELINE}. Сначала снять её WASM-прогоном.`);
-  process.exit(1);
+/**
+ * ⚠️ ЧИСЛА WASM БЕРУТСЯ ЖИВЫМ ПРОГОНОМ, А НЕ ИЗ БАЗОВОЙ ЛИНИИ (починено
+ * 2026-08-11, учения F0-17).
+ *
+ * ЧТО БЫЛО. Скрипт читал `canary-baseline.json` и сравнивал native С НИМ. Пока
+ * закреплённая сборка совпадает с той, на которой снята линия, эти числа
+ * равны — и ответ случайно верен. Ошибка проявляется ТОЛЬКО при смене сборки,
+ * то есть ровно в патч-день, ровно когда сверка и нужна.
+ *
+ * ЧЕМ КОНЧИЛОСЬ. На патче 12.1 скрипт объявил «расхождений 8 — это баг
+ * сборки», хотя мерил дрейф баланса, и записал в `native-compare.json`
+ * `converged: 0, max_delta_pct: 0`. Файл читает `pnpm sync:canaries` — сайт
+ * заявил бы людям, что с нативом не сошёлся ни один профиль. Настоящее
+ * расхождение при пересчёте вручную: максимум 0,302% при пороге 0,5%.
+ *
+ * УРОК. Сверка обязана мерить ОБЕ стороны в одном прогоне. Величина, взятая
+ * из файла, — это прошлое, а не измерение.
+ */
+async function прогнатьWasm() {
+  const карта = new Map();
+  for (const [i, name] of PROFILES.entries()) {
+    process.stdout.write(`  WASM [${i + 1}/${PROFILES.length}] ${name} … `);
+    const r = await runProfile(name);
+    console.log(r.error ? `ОШИБКА: ${String(r.error).slice(0, 80)}` : `${Math.round(r.dps)} DPS`);
+    карта.set(name, r);
+  }
+  return карта;
 }
-const линия = JSON.parse(readFileSync(BASELINE, 'utf8'));
-const wasm = new Map((линия.profiles ?? линия.results ?? []).map((p) => [p.name, p]));
+
+console.log('\nПрогон WASM (числа для сверки берутся здесь, а не из базовой линии)');
+console.log('─'.repeat(78));
+const wasm = await прогнатьWasm();
 
 console.log('\nСВЕРКА WASM ↔ NATIVE');
 console.log(`образ ${ОБРАЗ} · seed ${SEED} · iterations ${ITERATIONS} · target_error ${TARGET_ERROR}%`);
@@ -146,6 +180,9 @@ if (толькоNative.length) console.log(`  ⚠️ падает только n
 const сошлись = строки.filter((с) => с.вердикт === 'сходится');
 const максДельта = сошлись.reduce((m, с) => Math.max(m, Math.abs(с.дельта ?? 0)), 0);
 
+// Первый профиль, который реально посчитался: у него и спрашиваем версии.
+const живой = [...wasm.values()].find((r) => r && !r.error && typeof r.dps === 'number');
+
 writeFileSync(
   ИТОГ_ФАЙЛ,
   JSON.stringify(
@@ -156,8 +193,12 @@ writeFileSync(
       converged: сошлись.length,
       total: строки.length,
       max_delta_pct: Number(максДельта.toFixed(2)),
-      build: линия.results?.[0]?.build ?? null,
-      wow_version: линия.results?.[0]?.wow_build?.wow_version ?? null,
+      // ⚠️ ВЕРСИИ БЕРУТСЯ ИЗ ЖИВОГО ПРОГОНА, А НЕ ИЗ БАЗОВОЙ ЛИНИИ. Раньше
+      // здесь читалась линия — то есть файл заявлял версию ПРОШЛОЙ сборки,
+      // даже когда мерили новую. На патче 12.1 это дало бы `12.0.7.68887` при
+      // фактических `12.1.0.69214`, и сайт показал бы людям чужой билд.
+      build: живой?.build ?? null,
+      wow_version: живой?.wow_build?.wow_version ?? живой?.wow_build ?? null,
     },
     null,
     2,
