@@ -34,7 +34,10 @@ import { spawnSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ITERATIONS, PROFILES, runProfile, SEED, TARGET_ERROR } from './canary.mjs';
+// ⚠️ ITERATIONS и TARGET_ERROR намеренно НЕ импортируются: у сверки свои
+// параметры (см. ИТЕРАЦИЙ_СВЕРКИ ниже). Набор и прогонщик — общие с линией,
+// второй реализации нет по построению.
+import { наборПрофиля, PROFILES, runProfile, SEED } from './canary.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Базовая линия здесь БОЛЬШЕ НЕ ЧИТАЕТСЯ намеренно: сверка меряет две живые
@@ -50,7 +53,56 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  */
 const ИТОГ_ФАЙЛ = resolve(HERE, '..', 'native-compare.json');
 const ОБРАЗ = process.env.ENGINE_IMAGE ?? 'burstsim-engine:native';
-const ПОРОГ = 0.5; // процент, docs/02 §4
+
+/**
+ * ⚠️ У СВЕРКИ СВОИ ПАРАМЕТРЫ, И ЭТО НЕ ДУБЛИРОВАНИЕ (заведено 2026-08-11).
+ *
+ * Базовая линия и сверка отвечают на РАЗНЫЕ вопросы:
+ *  · линия — «сколько DPS», ей нужна статистически сошедшаяся оценка, и
+ *    `target_error` там уместен;
+ *  · сверка — «одинаково ли считают две сборки», это проверка эквивалентности,
+ *    и ей нужна ВОСПРОИЗВОДИМОСТЬ.
+ *
+ * `target_error` останавливает прогон, когда погрешность падает до заданной.
+ * Два независимых прогона останавливаются на разном числе итераций — и разница
+ * между ними становится случайной величиной ТОГО ЖЕ ПОРЯДКА, что и порог.
+ * Замер 2026-08-11: три сверки одной и той же пары сборок дали по Druid Balance
+ * 0,095% / −0,53% / +0,13%. Во втором прогоне профиль формально «расходился»,
+ * в третьем сходился; сборка между прогонами не менялась. Проверка мерила шум.
+ *
+ * Поэтому здесь `target_error` выключен, а число итераций фиксировано: при
+ * одинаковом seed обе сборки делают одинаковую работу, и любое расхождение
+ * становится свойством сборки, а не случая. Цена — прогон всегда полный,
+ * ранней остановки нет.
+ */
+const ИТЕРАЦИЙ_СВЕРКИ = Number(process.env.COMPARE_ITERATIONS ?? 2000);
+const TARGET_ERROR_СВЕРКИ = 0; // выключен намеренно, см. выше
+
+/**
+ * ПОРОГ ВЫВЕДЕН ИЗ ИЗМЕРЕНИЯ (2026-08-11), а не назначен на глаз.
+ *
+ * ЗАМЕР. Две сверки подряд на ОДНИХ И ТЕХ ЖЕ сборках, параметры одинаковы:
+ *  · расхождение WASM ↔ native   — до 0,30%;
+ *  · разброс между прогонами     — до 0,28%  ← пол измерения;
+ *  · WASM САМ С СОБОЙ            — до 0,154% ← сборка невоспроизводима.
+ *
+ * ⚠️ ИСТИННОГО НУЛЯ ЗДЕСЬ НЕ БЫВАЕТ. Выключение `target_error` сжало шум с
+ * 0,49% до 0,30%, но не убрало: при `threads=8` итерации распределяются между
+ * потоками не детерминированно, и один и тот же движок на одном и том же seed
+ * даёт слегка разные числа. Полная воспроизводимость потребовала бы
+ * `threads=1` — это кратно дольше и на патч-день не укладывается.
+ *
+ * ОТСЮДА ПОРОГ. Прежние 0,5% стояли всего в 1,8 раза выше пола — и мы это
+ * наблюдали живьём: −0,53% у Druid Balance при полностью исправных сборках.
+ * Гейт, срабатывающий на выпадение монетки, перестают читать. 1,0% — это
+ * примерно 3,5 пола: ложных тревог не даёт, а всё настоящее ловит, потому что
+ * реальные поломки сборки у нас проявлялись не полупроцентом, а падением
+ * профиля целиком (см. журнал тупиков, `-fwasm-exceptions`).
+ *
+ * ⚠️ НЕ ПУТАТЬ ПОРОГ С ИЗМЕРЕННЫМ. Сайту показывается фактическое расхождение
+ * (0,30%), а не порог. Порог — это когда бить тревогу, а не что мы намерили.
+ */
+const ПОРОГ = Number(process.env.COMPARE_THRESHOLD ?? 1.0);
 
 /**
  * Профили лежат внутри образа: /profiles — часть апстрима, а не обвязки.
@@ -62,8 +114,8 @@ const ПОРОГ = 0.5; // процент, docs/02 §4
  */
 function прогнать(name) {
   const команда =
-    `simc /profiles/MID1/${name}.simc ` +
-    `iterations=${ITERATIONS} target_error=${TARGET_ERROR} seed=${SEED} threads=8 ` +
+    `simc /profiles/${наборПрофиля(name)}/${name}.simc ` +
+    `iterations=${ИТЕРАЦИЙ_СВЕРКИ} target_error=${TARGET_ERROR_СВЕРКИ} seed=${SEED} threads=8 ` +
     `json2=/tmp/o.json html= report_details=0 >/tmp/log 2>&1 || { tail -3 /tmp/log >&2; exit 42; }; ` +
     `cat /tmp/o.json`;
 
@@ -112,7 +164,7 @@ async function прогнатьWasm() {
   const карта = new Map();
   for (const [i, name] of PROFILES.entries()) {
     process.stdout.write(`  WASM [${i + 1}/${PROFILES.length}] ${name} … `);
-    const r = await runProfile(name);
+    const r = await runProfile(name, { iterations: ИТЕРАЦИЙ_СВЕРКИ, targetError: TARGET_ERROR_СВЕРКИ });
     console.log(r.error ? `ОШИБКА: ${String(r.error).slice(0, 80)}` : `${Math.round(r.dps)} DPS`);
     карта.set(name, r);
   }
@@ -124,7 +176,10 @@ console.log('─'.repeat(78));
 const wasm = await прогнатьWasm();
 
 console.log('\nСВЕРКА WASM ↔ NATIVE');
-console.log(`образ ${ОБРАЗ} · seed ${SEED} · iterations ${ITERATIONS} · target_error ${TARGET_ERROR}%`);
+console.log(
+  `образ ${ОБРАЗ} · seed ${SEED} · iterations ${ИТЕРАЦИЙ_СВЕРКИ} · target_error выключен · порог ${ПОРОГ}%`,
+);
+console.log('(параметры сверки СВОИ, не линии: здесь нужна воспроизводимость, а не оценка)');
 console.log('─'.repeat(78));
 
 const строки = [];

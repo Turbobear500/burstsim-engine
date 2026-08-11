@@ -47,21 +47,49 @@ const ФАТАЛЬНОЕ = /^\s*Error:|Initialization error/i;
 /**
  * Двенадцать профилей по ролям и архетипам (docs/02 §4).
  * Набор фиксирован: меняя состав, теряешь сравнимость с прежней линией.
+ *
+ * ⚠️ НАБОР ПЕРЕСОБРАН 2026-08-11 (учения F0-17, слово владельца). Патч 12.1
+ * перестроил деревья талантов, а профили MID1 заморожены — апстрим убрал их
+ * генерацию в тот же день. Скан всех пятидесяти показал: живы 32, но мертвы
+ * ЦЕЛЫЕ КЛАССЫ — воин (3 спека), маг (5), паладин (4), охотник (3), Elemental
+ * Shaman, Havoc DH. Замена внутри класса поэтому невозможна.
+ *
+ * MID2 проверен тем же сканом: 16 из 16 живы. Берём его везде, где он есть, —
+ * он поддерживается и не рассыплется; MID1 добираем там, где MID2 ещё пуст.
+ *
+ * ⚠️ ЧЕГО В НАБОРЕ НЕТ И ВЗЯТЬ НЕОТКУДА: воина, паладина, мага. Их профили
+ * мертвы в MID1 и ещё не заведены в MID2. Доска на сайте обязана называть это
+ * прямо, а не умалчивать. Возвращаются по мере наполнения MID2.
+ *
+ * ⚠️ СМЕШИВАТЬ НАБОРЫ ЗАКОННО: канарейка сравнивает профиль САМ С СОБОЙ между
+ * сборками, а не профили между собой. Разный уровень снаряжения MID1 и MID2
+ * (около 120к против 220к DPS) на это не влияет.
  */
 export const PROFILES = [
-  'MID1_Warrior_Arms',           // ближний физический, 2H
-  'MID1_Warrior_Protection',     // танк физический
-  'MID1_Death_Knight_Unholy',    // ближний, питомец
-  'MID1_Death_Knight_Blood',     // танк, самолечение
-  'MID1_Rogue_Assassination',    // ближний, DoT
-  'MID1_Monk_Windwalker',        // ближний, комбо
-  'MID1_Hunter_Marksmanship',    // дальний физический
-  'MID1_Mage_Frost',             // дальний магический, бурст
-  'MID1_Warlock_Affliction',     // дальний, DoT-центричный
-  'MID1_Priest_Shadow',          // дальний, ресурсный
+  'MID2_Death_Knight_Unholy',    // латный ближний, питомец
+  'MID2_Death_Knight_Blood',     // латный танк, самолечение
+  'MID2_Hunter_Marksmanship',    // дальний физический
+  'MID2_Priest_Shadow',          // дальний, ресурсный
+  'MID2_Shaman_Enhancement',     // ближний кольчужный
+  'MID2_Warlock_Destruction',    // дальний, бурст
+  'MID2_Demon_Hunter_Vengeance', // танк вне латы
   'MID1_Druid_Balance',          // дальний, циклы
   'MID1_Evoker_Devastation',     // дальний, эмпауэр
+  'MID1_Monk_Windwalker',        // ближний, комбо
+  'MID1_Rogue_Assassination',    // ближний, DoT
+  'MID1_Druid_Guardian',         // танк, второй тип
 ];
+
+/**
+ * Каталог профиля выводится из его имени, а не задан константой: набор стал
+ * смешанным (MID1 + MID2), и жёстко зашитый каталог молча искал бы файлы не
+ * там. Имя профиля само несёт свой набор — это единственный источник правды.
+ */
+export function наборПрофиля(name) {
+  const m = /^(MID\d+)_/.exec(name);
+  if (!m) throw new Error(`имя профиля без набора: ${name}`);
+  return m[1];
+}
 
 export const SEED = 4242;
 export const ITERATIONS = 2000;
@@ -75,9 +103,14 @@ export const TARGET_ERROR = 0.5; // компромисс: 12 профилей д
  *
  * Импорт безопасен: работа скрипта закрыта проверкой «запущен ли файл
  * напрямую» в конце файла.
+ *
+ * `опции` позволяют звать прогон с ДРУГИМИ параметрами, не трогая базовую
+ * линию: сверке нужна воспроизводимость (фиксированные итерации, выключенный
+ * `target_error`), линии — сошедшаяся оценка. Разные вопросы, разные числа;
+ * подробности у `ИТЕРАЦИЙ_СВЕРКИ` в compare-native.mjs.
  */
-export async function runProfile(name) {
-  const profilePath = join(ROOT, 'profiles', 'MID1', `${name}.simc`);
+export async function runProfile(name, опции = {}) {
+  const profilePath = join(ROOT, 'profiles', наборПрофиля(name), `${name}.simc`);
   if (!existsSync(profilePath)) return { name, error: 'профиль не найден' };
 
   const factory = (await import(pathToFileURL(join(BUILD, 'simc.js')).href)).default;
@@ -99,8 +132,8 @@ export async function runProfile(name) {
   try {
     Module.callMain([
       '/in.simc',
-      `iterations=${ITERATIONS}`,
-      `target_error=${TARGET_ERROR}`,
+      `iterations=${опции.iterations ?? ITERATIONS}`,
+      `target_error=${опции.targetError ?? TARGET_ERROR}`,
       `seed=${SEED}`,
       'threads=8',
       'json2=/out.json',

@@ -2,186 +2,186 @@
   "seed": 4242,
   "iterations": 2000,
   "target_error": 0.5,
-  "recorded": "2026-08-07",
+  "recorded": "2026-08-11",
   "results": [
     {
-      "name": "MID1_Warrior_Arms",
-      "spec": "Arms Warrior",
-      "dps": 107678,
-      "mean_std_dev": 237.32,
-      "err_pct": 0.22,
-      "build": "1205-01",
-      "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
-      }
-    },
-    {
-      "name": "MID1_Warrior_Protection",
-      "spec": "Protection Warrior",
-      "dps": 84435,
-      "mean_std_dev": 190.79,
-      "err_pct": 0.226,
-      "build": "1205-01",
-      "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
-      }
-    },
-    {
-      "name": "MID1_Death_Knight_Unholy",
+      "name": "MID2_Death_Knight_Unholy",
       "spec": "Unholy Death Knight",
-      "dps": 134394,
-      "mean_std_dev": 332.91,
-      "err_pct": 0.248,
+      "dps": 233715,
+      "mean_std_dev": 516.31,
+      "err_pct": 0.221,
       "build": "1205-01",
       "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
       }
     },
     {
-      "name": "MID1_Death_Knight_Blood",
+      "name": "MID2_Death_Knight_Blood",
       "spec": "Blood Death Knight",
-      "dps": 70508,
-      "mean_std_dev": 170.13,
-      "err_pct": 0.241,
+      "dps": 128452,
+      "mean_std_dev": 276.38,
+      "err_pct": 0.215,
       "build": "1205-01",
       "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
       }
     },
     {
-      "name": "MID1_Rogue_Assassination",
-      "spec": "Assassination Rogue",
-      "dps": 107452,
-      "mean_std_dev": 222.07,
-      "err_pct": 0.207,
-      "build": "1205-01",
-      "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
-      }
-    },
-    {
-      "name": "MID1_Monk_Windwalker",
-      "spec": "Windwalker Monk",
-      "dps": 118231,
-      "mean_std_dev": 286.04,
-      "err_pct": 0.242,
-      "build": "1205-01",
-      "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
-      }
-    },
-    {
-      "name": "MID1_Hunter_Marksmanship",
+      "name": "MID2_Hunter_Marksmanship",
       "spec": "Marksmanship Hunter",
-      "dps": 128056,
-      "mean_std_dev": 295.51,
-      "err_pct": 0.231,
+      "dps": 235856,
+      "mean_std_dev": 546.09,
+      "err_pct": 0.232,
       "build": "1205-01",
       "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
       }
     },
     {
-      "name": "MID1_Mage_Frost",
-      "spec": "Frost Mage",
-      "dps": 121343,
-      "mean_std_dev": 232.74,
-      "err_pct": 0.192,
-      "build": "1205-01",
-      "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
-      }
-    },
-    {
-      "name": "MID1_Warlock_Affliction",
-      "spec": "Affliction Warlock",
-      "dps": 113865,
-      "mean_std_dev": 254.49,
-      "err_pct": 0.224,
-      "build": "1205-01",
-      "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
-      }
-    },
-    {
-      "name": "MID1_Priest_Shadow",
+      "name": "MID2_Priest_Shadow",
       "spec": "Shadow Priest",
-      "dps": 117961,
-      "mean_std_dev": 269.55,
-      "err_pct": 0.229,
+      "dps": 217078,
+      "mean_std_dev": 435.87,
+      "err_pct": 0.201,
       "build": "1205-01",
       "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
+      }
+    },
+    {
+      "name": "MID2_Shaman_Enhancement",
+      "spec": "Enhancement Shaman",
+      "dps": 221472,
+      "mean_std_dev": 525.55,
+      "err_pct": 0.237,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
+      }
+    },
+    {
+      "name": "MID2_Warlock_Destruction",
+      "spec": "Destruction Warlock",
+      "dps": 227945,
+      "mean_std_dev": 495.04,
+      "err_pct": 0.217,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
+      }
+    },
+    {
+      "name": "MID2_Demon_Hunter_Vengeance",
+      "spec": "Vengeance Demon Hunter",
+      "dps": 133902,
+      "mean_std_dev": 293.63,
+      "err_pct": 0.219,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
       }
     },
     {
       "name": "MID1_Druid_Balance",
       "spec": "Balance Druid",
-      "dps": 115727,
-      "mean_std_dev": 277.08,
-      "err_pct": 0.239,
+      "dps": 122914,
+      "mean_std_dev": 282.16,
+      "err_pct": 0.23,
       "build": "1205-01",
       "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
       }
     },
     {
       "name": "MID1_Evoker_Devastation",
       "spec": "Devastation Evoker",
-      "dps": 114315,
-      "mean_std_dev": 262.11,
+      "dps": 136313,
+      "mean_std_dev": 312.29,
       "err_pct": 0.229,
       "build": "1205-01",
       "wow_build": {
-        "build_level": 68887,
-        "wow_version": "12.0.7.68887",
-        "hotfix_date": "2026-07-23",
-        "hotfix_build": 68887,
-        "hotfix_hash": "ac9efbc3b920aa52b8d0a9b05decbebb1acbcaac65506be60745c2c29f08572a"
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
+      }
+    },
+    {
+      "name": "MID1_Monk_Windwalker",
+      "spec": "Windwalker Monk",
+      "dps": 120478,
+      "mean_std_dev": 242.47,
+      "err_pct": 0.201,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
+      }
+    },
+    {
+      "name": "MID1_Rogue_Assassination",
+      "spec": "Assassination Rogue",
+      "dps": 117130,
+      "mean_std_dev": 282.66,
+      "err_pct": 0.241,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
+      }
+    },
+    {
+      "name": "MID1_Druid_Guardian",
+      "spec": "Guardian Druid",
+      "dps": 81255,
+      "mean_std_dev": 179.84,
+      "err_pct": 0.221,
+      "build": "1205-01",
+      "wow_build": {
+        "build_level": 69214,
+        "wow_version": "12.1.0.69214",
+        "hotfix_date": "2026-08-11",
+        "hotfix_build": 69214,
+        "hotfix_hash": "f9798bd44b912a74ed01efb9c070d5e92b8d059ca6e0af91ec96ef0f8546ee29"
       }
     }
   ]
